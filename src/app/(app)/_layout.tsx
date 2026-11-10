@@ -1,8 +1,10 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 
+import { T } from '@/components/ui';
 import { useAuth } from '@/lib/auth/provider';
-import { useProgressHydrated, useUserProgress } from '@/lib/progress/store';
+import { useProgressHydrated, useProgressStore, useUserProgress } from '@/lib/progress/store';
 import { colors } from '@/lib/theme';
 
 export default function AppLayout() {
@@ -20,7 +22,20 @@ export default function AppLayout() {
     else if (hasAssessment && pathname === '/welcome') router.replace('/');
   }, [hasAssessment, hydrated, onboarding, pathname, router, user]);
 
+  const syncError = useProgressStore((state) => state.syncError);
+
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ink } }} />
+    <View style={{ flex: 1, backgroundColor: colors.ink }}>
+      {syncError ? (
+        <View style={{ backgroundColor: colors.panel, paddingHorizontal: 16, paddingVertical: 8 }}>
+          <T tone="clay" className="text-sm leading-5">
+            {syncError} Progress is still on this device.
+          </T>
+        </View>
+      ) : null}
+      <View style={{ flex: 1 }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ink } }} />
+      </View>
+    </View>
   );
 }

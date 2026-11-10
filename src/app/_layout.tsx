@@ -8,6 +8,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 
 import { AuthProvider, useAuth } from '@/lib/auth/provider';
+import { useRemoteProgressReady } from '@/lib/progress/sync';
 import { useProgressHydrated } from '@/lib/progress/store';
 import { colors } from '@/lib/theme';
 
@@ -34,26 +35,26 @@ export default function RootLayout() {
     <AuthProvider>
       <ThemeProvider value={theme}>
         <StatusBar style="light" />
-        <SplashGate />
         <RootNavigator />
       </ThemeProvider>
     </AuthProvider>
   );
 }
 
-function SplashGate() {
-  const { ready } = useAuth();
+function useAppReady(): boolean {
+  const { ready, mode, user } = useAuth();
   const hydrated = useProgressHydrated();
-  useEffect(() => {
-    if (ready && hydrated) SplashScreen.hideAsync().catch(() => {});
-  }, [ready, hydrated]);
-  return null;
+  const remoteReady = useRemoteProgressReady(user?.id, user?.name ?? '', mode === 'supabase' && hydrated);
+  return ready && hydrated && remoteReady;
 }
 
 function RootNavigator() {
-  const { ready, user } = useAuth();
-  const hydrated = useProgressHydrated();
-  if (!ready || !hydrated) return null;
+  const { user } = useAuth();
+  const appReady = useAppReady();
+  useEffect(() => {
+    if (appReady) SplashScreen.hideAsync().catch(() => {});
+  }, [appReady]);
+  if (!appReady) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ink } }}>

@@ -50,7 +50,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/scoring/*.test.ts src/lib/progression/*.test.ts src/lib/data/*.test.ts src/lib/progress/*.test.ts src/lib/share/*.test.ts"
+    "test": "tsx --test src/lib/scoring/*.test.ts src/lib/progression/*.test.ts src/lib/data/*.test.ts src/lib/progress/*.test.ts src/lib/share/*.test.ts src/lib/supabase/*.test.ts"
   },
   "private": true
 }

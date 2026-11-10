@@ -1,11 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { supabaseConfigState } from '../auth/mode';
 import { getBadge } from '../data/badges';
 import { ASSESSMENT_VERSION, QUESTIONS } from '../data/questions';
 import type { RawAnswer } from '../scoring/engine';
+import { isUuid } from '../supabase/records';
 import { validateCompletion } from './rules';
 
 export interface UserBadgeRecord {
@@ -41,6 +44,9 @@ export interface UserProgress {
 
 interface ProgressState {
   byUser: Record<string, UserProgress>;
+  /** User ids with edits that have not been confirmed by Supabase. */
+  dirty: Record<string, true>;
+  syncError: string | null;
   setDraft: (userId: string, draft: Draft) => void;
   completeAssessment: (userId: string, answers: RawAnswer[]) => { ok: true } | { ok: false; reason: string };
   startBadge: (userId: string, badgeId: string) => { ok: true } | { ok: false; reason: string };
@@ -58,26 +64,35 @@ function blankProgress(): UserProgress {
   return { draft: null, assessments: [], badges: {} };
 }
 
-function createId(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+function createId(): string {
+  return Crypto.randomUUID();
 }
 
 function current(byUser: Record<string, UserProgress>, userId: string): UserProgress {
   return byUser[userId] ?? blankProgress();
 }
 
+function writeProgress(
+  set: (partial: Partial<ProgressState> | ((state: ProgressState) => Partial<ProgressState>)) => void,
+  userId: string,
+  progress: UserProgress,
+) {
+  const track = isUuid(userId) && supabaseConfigState() === 'ready';
+  set((state) => ({
+    byUser: { ...state.byUser, [userId]: progress },
+    dirty: track ? { ...state.dirty, [userId]: true } : state.dirty,
+  }));
+}
+
 export const useProgressStore = create<ProgressState>()(
   persist(
     (set, get) => ({
       byUser: {},
+      dirty: {},
+      syncError: null,
       setDraft: (userId, draft) => {
         const progress = current(get().byUser, userId);
-        set({
-          byUser: {
-            ...get().byUser,
-            [userId]: { ...progress, draft },
-          },
-        });
+        writeProgress(set, userId, { ...progress, draft });
       },
       completeAssessment: (userId, answers) => {
         const missing = QUESTIONS.some((question) => {
@@ -87,20 +102,15 @@ export const useProgressStore = create<ProgressState>()(
         if (missing) return { ok: false, reason: 'Answer every question before you submit.' };
         const progress = current(get().byUser, userId);
         const record: AssessmentRecord = {
-          id: createId('assessment'),
+          id: createId(),
           version: ASSESSMENT_VERSION,
           completedAt: new Date().toISOString(),
           answers,
         };
-        set({
-          byUser: {
-            ...get().byUser,
-            [userId]: {
-              ...progress,
-              draft: null,
-              assessments: [...progress.assessments, record],
-            },
-          },
+        writeProgress(set, userId, {
+          ...progress,
+          draft: null,
+          assessments: [...progress.assessments, record],
         });
         return { ok: true };
       },
@@ -119,19 +129,14 @@ export const useProgressStore = create<ProgressState>()(
           return { ok: false, reason: 'Finish the prerequisite badges first.' };
         }
         if (existing?.status === 'in_progress') return { ok: true };
-        set({
-          byUser: {
-            ...get().byUser,
-            [userId]: {
-              ...progress,
-              badges: {
-                ...progress.badges,
-                [badgeId]: {
-                  badgeId,
-                  status: 'in_progress',
-                  startedAt: new Date().toISOString(),
-                },
-              },
+        writeProgress(set, userId, {
+          ...progress,
+          badges: {
+            ...progress.badges,
+            [badgeId]: {
+              badgeId,
+              status: 'in_progress',
+              startedAt: new Date().toISOString(),
             },
           },
         });
@@ -155,22 +160,17 @@ export const useProgressStore = create<ProgressState>()(
         if (!verdict.ok) return verdict;
         const existing = progress.badges[badgeId];
         const completedAt = new Date().toISOString();
-        set({
-          byUser: {
-            ...get().byUser,
-            [userId]: {
-              ...progress,
-              badges: {
-                ...progress.badges,
-                [badgeId]: {
-                  badgeId,
-                  status: 'completed',
-                  startedAt: existing?.startedAt ?? completedAt,
-                  completedAt,
-                  reflection: reflection.trim(),
-                  proof: { method: 'self_attestation', attested: true, attestedAt: completedAt },
-                },
-              },
+        writeProgress(set, userId, {
+          ...progress,
+          badges: {
+            ...progress.badges,
+            [badgeId]: {
+              badgeId,
+              status: 'completed',
+              startedAt: existing?.startedAt ?? completedAt,
+              completedAt,
+              reflection: reflection.trim(),
+              proof: { method: 'self_attestation', attested: true, attestedAt: completedAt },
             },
           },
         });
@@ -180,7 +180,7 @@ export const useProgressStore = create<ProgressState>()(
     {
       name: 'sovereign-path.progress.v1',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ byUser: state.byUser }),
+      partialize: (state) => ({ byUser: state.byUser, dirty: state.dirty }),
     },
   ),
 );
