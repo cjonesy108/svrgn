@@ -1,0 +1,23 @@
+{
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.07059,0.08627,0.07843,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "expo-symbol 2.svg",
+          "name": "mark",
+          "position": {
+            "scale": 0.72,
+            "translation-in-points": [0, 0]
+          }
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "circles": ["watchOS"],
+    "squares": "shared"
+  }
+}
