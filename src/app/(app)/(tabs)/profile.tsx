@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { ShareSheet } from '@/components/share-sheet';
 import { Button, Screen, T, Wordmark } from '@/components/ui';
 import { useAuth } from '@/lib/auth/provider';
 import { getBadge } from '@/lib/data/badges';
@@ -8,12 +10,14 @@ import { getDomain } from '@/lib/data/domains';
 import { recordsByStatus } from '@/lib/progress/selectors';
 import { usePathData } from '@/lib/progress/use-path';
 import { useProgressStore } from '@/lib/progress/store';
+import { badgeShareModel, rankShareModel, type ShareCardModel } from '@/lib/share/model';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { mode, signOut } = useAuth();
   const { user, progress, rank } = usePathData();
   const setDraft = useProgressStore((state) => state.setDraft);
+  const [share, setShare] = useState<ShareCardModel | null>(null);
   if (!user) return null;
 
   const earned = recordsByStatus(progress, 'completed');
@@ -37,6 +41,11 @@ export default function ProfileScreen() {
         <Stat label="Badges" value={String(earned.length)} />
         <Stat label="XP" value={String(xp)} />
       </View>
+      {rank.current ? (
+        <View className="mt-4">
+          <Button label="Share rank card" tone="ghost" onPress={() => setShare(rankShareModel(rank, user.name))} />
+        </View>
+      ) : null}
 
       <T tone="brass" className="mb-3 mt-8 text-xs uppercase tracking-[2px]">
         Badge showcase
@@ -52,16 +61,35 @@ export default function ProfileScreen() {
             if (!badge) return null;
             const domain = getDomain(badge.domainId);
             return (
-              <Pressable
-                key={badge.id}
-                onPress={() => router.push(`/badge/${badge.id}`)}
-                className="w-[47%] rounded-md border border-line bg-panel p-3"
-              >
-                <T tone="brass" className="text-xs uppercase tracking-widest">
-                  {domain?.short}
-                </T>
-                <T className="mt-2 text-sm font-semibold">{badge.title}</T>
-              </Pressable>
+              <View key={badge.id} className="w-[47%] rounded-md border border-line bg-panel p-3">
+                <Pressable accessibilityRole="button" onPress={() => router.push(`/badge/${badge.id}`)}>
+                  <T tone="brass" className="text-xs uppercase tracking-widest">
+                    {domain?.short}
+                  </T>
+                  <T className="mt-2 text-sm font-semibold">{badge.title}</T>
+                </Pressable>
+                {domain ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() =>
+                      setShare(
+                        badgeShareModel({
+                          badge,
+                          holderName: user.name,
+                          domainName: domain.name,
+                          layer: domain.layer,
+                          earnedAt: record.completedAt ?? new Date().toISOString(),
+                        }),
+                      )
+                    }
+                    className="mt-3"
+                  >
+                    <T tone="brass" className="text-sm">
+                      Share card
+                    </T>
+                  </Pressable>
+                ) : null}
+              </View>
             );
           })}
         </View>
@@ -78,6 +106,7 @@ export default function ProfileScreen() {
         />
         <Button label="Sign out" tone="ghost" onPress={() => signOut()} />
       </View>
+      <ShareSheet model={share} onClose={() => setShare(null)} />
     </Screen>
   );
 }
