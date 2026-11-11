@@ -32,7 +32,7 @@ export default function ProfileScreen() {
       </T>
       <T className="mt-4 text-sm leading-5">
         {mode === 'supabase'
-          ? 'Sign-in uses Supabase. Badges, intake answers, and rank progress stay on this device.'
+          ? 'This account, intake, scores, badges, reflections, and rank are stored in your Supabase project.'
           : 'This session and your progress stay on this device. Supabase is not configured.'}
       </T>
 

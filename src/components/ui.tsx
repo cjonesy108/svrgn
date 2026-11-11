@@ -87,7 +87,7 @@ export function ModeNote() {
     mode === 'local'
       ? 'Local session. Supabase is not configured, so this account stays on this device. It is not Supabase Auth.'
       : mode === 'supabase'
-        ? 'Supabase Auth. This screen uses the project in your environment variables.'
+        ? 'Supabase Auth. Sign-in and progress use the project in your environment variables.'
         : 'Supabase is only partly configured. Set both EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY, or leave both empty for a local session.';
   return (
     <View className="mt-4 rounded-md border border-line bg-panel px-3 py-3">

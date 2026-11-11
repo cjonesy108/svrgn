@@ -2,7 +2,7 @@
 
 Sovereign Path is a mobile app for ranks and merit badges across personal capability and civic self-governance. This repo is an Expo app (SDK 57, TypeScript) with Expo Router and NativeWind.
 
-The intake, ranks, and badges work without a Supabase project. Progress stays on the device. Supabase is wired for auth only, and only when you set both environment variables.
+The intake, ranks, and badges work without a Supabase project. With both Supabase variables empty, progress stays on the device. With both set, auth and progress are stored in that project.
 
 ## Install
 
@@ -11,7 +11,7 @@ npm install
 cp .env.example .env
 ```
 
-Leave the values in `.env` empty unless you are connecting Supabase Auth.
+Leave the values in `.env` empty unless you are connecting a Supabase project.
 
 ## Run
 
@@ -31,20 +31,39 @@ npm run typecheck
 
 ## Supabase
 
-Copy `.env.example` to `.env` in the project root. Expo reads `EXPO_PUBLIC_*` variables from that file. Restart Expo after you change them.
+The app reads only these two public variables. Do not put the service role key in `.env` or in the app. Row level security is what keeps each account on its own rows.
 
 | Variable | Purpose |
 | --- | --- |
-| `EXPO_PUBLIC_SUPABASE_URL` | Project URL |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Public anon key |
+| `EXPO_PUBLIC_SUPABASE_URL` | Project URL, from Project Settings → API |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | anon public key, from the same page |
 
-Both empty: the app uses the on-device session in `src/lib/auth/local-session.ts`. Create an account on the sign-up screen. It never calls Supabase.
+Both empty: the app uses the on-device session in `src/lib/auth/local-session.ts`. Create an account on the sign-up screen. It never calls Supabase. Intake answers, scores, badges, reflections, and rank stay in AsyncStorage (`sovereign-path.progress.v1`).
 
-Both set: sign-in and sign-up use Supabase Auth in `src/lib/supabase/auth.ts`. The app does not fall back to the local session. If email confirmation is required, confirm the message, then sign in.
+Both set: sign-in uses Supabase Auth (`src/lib/supabase/auth.ts`). Intake responses, domain scores, badge progress, reflections, and the current rank are written to Postgres (`src/lib/supabase/remote.ts`). The app does not fall back to the local session. Auth tokens use a separate storage key, `sovereign-path.supabase-auth`.
 
 One set, or a URL that is not `http`/`https`: the sign-in screen explains the problem and does not create an account.
 
-Badge progress, reflections, and intake answers are stored on the device (`sovereign-path.progress.v1` in AsyncStorage). They are not written to Supabase in this version. Supabase auth tokens, when configured, use a separate storage key: `sovereign-path.supabase-auth`.
+### Create the project and run the migration
+
+1. Create a project at [supabase.com/dashboard](https://supabase.com/dashboard).
+2. Open **SQL Editor → New query**.
+3. Paste the contents of `supabase/migrations/20261110164000_progress.sql` and run it. That creates `profiles`, `assessments`, `domain_scores`, `badge_progress`, and `intake_drafts`, enables row level security, and adds a trigger so a new auth user gets a profile row.
+4. Open **Project Settings → API**. Copy the Project URL into `EXPO_PUBLIC_SUPABASE_URL` and the anon public key into `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `.env`.
+5. Restart Expo (`npx expo start`). The packager only reads `EXPO_PUBLIC_*` at startup.
+6. In **Authentication → Providers → Email**, leave email auth enabled. If **Confirm email** is on, open the confirmation message, then sign in. The app does not create a session until Supabase returns one.
+
+To apply the same file with the Supabase CLI instead of the SQL editor:
+
+```bash
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+```
+
+`YOUR_PROJECT_REF` is the reference id in Project Settings → General. It is not a secret. The CLI still uses your own Supabase access token, which you should not commit.
+
+Tables are readable and writable only where `auth.uid()` matches the row's user. The anon role has no grants on them.
 
 ## What you can do
 
