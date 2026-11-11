@@ -46,7 +46,7 @@ export default function DashboardScreen() {
         {narrative.paragraphs[1]}
       </T>
       <View className="mt-5">
-        <RankCard snapshot={rank} />
+        <RankCard snapshot={rank} holderName={user.name} />
       </View>
 
       <T tone="brass" className="mb-3 mt-8 text-xs uppercase tracking-[2px]">

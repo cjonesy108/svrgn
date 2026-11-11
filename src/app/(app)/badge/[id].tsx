@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 
 import { Note, ProtocolCard } from '@/components/protocol-card';
+import { ShareSheet } from '@/components/share-sheet';
 import { Button, Screen, T, Wordmark } from '@/components/ui';
 import { getBadge } from '@/lib/data/badges';
 import { getDomain } from '@/lib/data/domains';
@@ -11,6 +12,7 @@ import { LEGAL_LITERACY_NOTE } from '@/lib/data/legal';
 import { usePathData } from '@/lib/progress/use-path';
 import { MIN_REFLECTION_LENGTH } from '@/lib/progress/rules';
 import { useProgressStore } from '@/lib/progress/store';
+import { badgeShareModel } from '@/lib/share/model';
 import { colors } from '@/lib/theme';
 
 export default function BadgeDetailScreen() {
@@ -24,6 +26,7 @@ export default function BadgeDetailScreen() {
   const [attested, setAttested] = useState(false);
   const [reflection, setReflection] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (!badge || !user) {
     return (
@@ -141,6 +144,9 @@ export default function BadgeDetailScreen() {
               Earned {record.completedAt ? new Date(record.completedAt).toLocaleDateString() : ''}
             </T>
             <T className="mt-3 text-base leading-6">{record.reflection}</T>
+            <View className="mt-4">
+              <Button label="Share badge card" onPress={() => setShareOpen(true)} />
+            </View>
           </View>
         ) : locked ? (
           <T tone="mute" className="text-sm leading-5">
@@ -182,6 +188,20 @@ export default function BadgeDetailScreen() {
           </T>
         ) : null}
       </View>
+      <ShareSheet
+        model={
+          shareOpen && record?.status === 'completed' && domain
+            ? badgeShareModel({
+                badge,
+                holderName: user.name,
+                domainName: domain.name,
+                layer: domain.layer,
+                earnedAt: record.completedAt ?? new Date().toISOString(),
+              })
+            : null
+        }
+        onClose={() => setShareOpen(false)}
+      />
     </Screen>
   );
 }

@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Panel, T } from '@/components/ui';
+import { ShareSheet } from '@/components/share-sheet';
+import { Button, Panel, T } from '@/components/ui';
 import type { RankSnapshot } from '@/lib/progression/evaluate';
+import { rankShareModel } from '@/lib/share/model';
 
-export function RankCard({ snapshot }: { snapshot: RankSnapshot }) {
+export function RankCard({ snapshot, holderName }: { snapshot: RankSnapshot; holderName?: string }) {
   const rank = snapshot.current;
+  const [open, setOpen] = useState(false);
+  const share = holderName ? rankShareModel(snapshot, holderName) : null;
   return (
     <Panel>
       <T tone="brass" className="text-xs uppercase tracking-[2px]">
@@ -29,6 +34,12 @@ export function RankCard({ snapshot }: { snapshot: RankSnapshot }) {
           </View>
         ))}
       </View>
+      {share ? (
+        <View className="mt-4">
+          <Button label="Share rank card" tone="ghost" onPress={() => setOpen(true)} />
+        </View>
+      ) : null}
+      <ShareSheet model={open ? share : null} onClose={() => setOpen(false)} />
     </Panel>
   );
 }

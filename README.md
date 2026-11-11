@@ -48,7 +48,7 @@ Badge progress, reflections, and intake answers are stored on the device (`sover
 
 ## What you can do
 
-Sign up, take the 12-domain intake, see the radar and starting rank, browse the badge catalog, open a badge, attest and reflect to complete it, and see earned badges on your profile. Ranks use the example thresholds: Initiate, Apprentice (8 badges, one in each personal domain), Journeyman (20, including 3 civic), Adept (35, with domain minimums), Sovereign (50, with civic depth).
+Sign up, take the 12-domain intake, see the radar and starting rank, browse the badge catalog, open a badge, attest and reflect to complete it, and see earned badges on your profile. A completed badge and the current rank can each be saved as a PNG card from the badge screen, the profile, and the rank card. On a phone the save action opens the share sheet when the browser or device allows it. Ranks use the example thresholds: Initiate, Apprentice (8 badges, one in each personal domain), Journeyman (20, including 3 civic), Adept (35, with domain minimums), Sovereign (50, with civic depth).
 
 Lessons are text plus an optional public link. Domain protocol cards are the “when you fall short” notes.
 

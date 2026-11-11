@@ -59,7 +59,7 @@ export default function ResultsScreen() {
         ))}
       </View>
       <View className="mt-6">
-        <RankCard snapshot={rank} />
+        <RankCard snapshot={rank} holderName={user.name} />
       </View>
       <T tone="brass" className="mb-3 mt-8 text-xs uppercase tracking-[2px]">
         Highest-leverage badges
